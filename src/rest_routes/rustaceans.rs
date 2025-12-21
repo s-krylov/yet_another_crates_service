@@ -1,0 +1,62 @@
+use rocket::http::Status;
+use rocket::response::status::{Custom, NoContent};
+use rocket::serde::json::{Json, Value, serde_json::json};
+use rocket_db_pools::Connection;
+
+use super::DbConnection;
+
+use crate::models::NewRustaceans;
+use crate::repository::RustaceansRepository;
+
+#[rocket::get("/rustaceans")]
+pub async fn get_rustaceans(mut db: Connection<DbConnection>) -> Result<Value, Custom<Value>> {
+    RustaceansRepository::list(&mut db, 100)
+        .await
+        .map(|rustaceans| json!(rustaceans))
+        .map_err(|_| Custom(Status::InternalServerError, json!("Error")))
+}
+
+#[rocket::get("/rustaceans/<id>")]
+pub async fn get_rustacean(
+    mut db: Connection<DbConnection>,
+    id: i32,
+) -> Result<Value, Custom<Value>> {
+    RustaceansRepository::find_ond(&mut db, id)
+        .await
+        .map(|rustacean| json!(rustacean))
+        .map_err(|_| Custom(Status::InternalServerError, json!("Error")))
+}
+
+#[rocket::post("/rustaceans", format = "json", data = "<new_rustacean>")]
+pub async fn create_rustacean(
+    mut db: Connection<DbConnection>,
+    new_rustacean: Json<NewRustaceans>,
+) -> Result<Custom<Value>, Custom<Value>> {
+    RustaceansRepository::create(&mut db, new_rustacean.into_inner())
+        .await
+        .map(|rustacean| Custom(Status::Created, json!(rustacean)))
+        .map_err(|_| Custom(Status::InternalServerError, json!("Error")))
+}
+
+#[rocket::put("/rustaceans/<id>", format = "json", data = "<new_rustacean>")]
+pub async fn update_rustacean(
+    mut db: Connection<DbConnection>,
+    id: i32,
+    new_rustacean: Json<NewRustaceans>,
+) -> Result<Value, Custom<Value>> {
+    RustaceansRepository::update(&mut db, id, new_rustacean.into_inner())
+        .await
+        .map(|rustacean| json!(rustacean))
+        .map_err(|_| Custom(Status::InternalServerError, json!("Error")))
+}
+
+#[rocket::delete("/rustaceans/<id>")]
+pub async fn delete_rustacean(
+    mut db: Connection<DbConnection>,
+    id: i32,
+) -> Result<NoContent, Custom<Value>> {
+    RustaceansRepository::delete(&mut db, id)
+        .await
+        .map(|_| NoContent)
+        .map_err(|_| Custom(Status::InternalServerError, json!("Error")))
+}

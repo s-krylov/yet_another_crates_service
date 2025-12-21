@@ -1,0 +1,22 @@
+services:
+  app:
+    build: .
+    environment:
+      - DATABASE_URL=postgres://sa:pass@postgres/crate_db
+      - ROCKET_DATABASES={postgres={url=postgres://sa:pass@postgres/crate_db}}
+    ports:
+      - 8000:8000
+    volumes:
+      - ./:/app/
+
+
+  redis:
+    image: redis:8.4.0
+
+  postgres:
+    image: postgres:18.1
+    environment:
+      - POSTGRES_USER=sa
+      - POSTGRES_PASSWORD=pass
+      - POSTGRES_DB=crate_db
+    command: ["postgres", "-c", "log_statement=all"]
