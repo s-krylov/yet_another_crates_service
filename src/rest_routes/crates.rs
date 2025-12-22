@@ -4,6 +4,7 @@ use rocket::serde::json::{Json, Value, serde_json::json};
 use rocket_db_pools::Connection;
 
 use super::DbConnection;
+use super::handle_error;
 
 use crate::models::NewCrates;
 use crate::repository::CratesRepository;
@@ -21,7 +22,7 @@ pub async fn get_crate(mut db: Connection<DbConnection>, id: i32) -> Result<Valu
     CratesRepository::find_ond(&mut db, id)
         .await
         .map(|a_crate| json!(a_crate))
-        .map_err(|_| Custom(Status::InternalServerError, json!("Error")))
+        .map_err(handle_error)
 }
 
 #[rocket::post("/crates", format = "json", data = "<new_crate>")]
@@ -32,7 +33,7 @@ pub async fn create_crate(
     CratesRepository::create(&mut db, new_crate.into_inner())
         .await
         .map(|a_crate| Custom(Status::Created, json!(a_crate)))
-        .map_err(|_| Custom(Status::InternalServerError, json!("Error")))
+        .map_err(handle_error)
 }
 
 #[rocket::put("/crates/<id>", format = "json", data = "<new_crate>")]
@@ -44,7 +45,7 @@ pub async fn update_crate(
     CratesRepository::update(&mut db, id, new_crate.into_inner())
         .await
         .map(|a_crate| json!(a_crate))
-        .map_err(|_| Custom(Status::InternalServerError, json!("Error")))
+        .map_err(handle_error)
 }
 
 #[rocket::delete("/crates/<id>")]
@@ -55,5 +56,5 @@ pub async fn delete_crate(
     CratesRepository::delete(&mut db, id)
         .await
         .map(|_| NoContent)
-        .map_err(|_| Custom(Status::InternalServerError, json!("Error")))
+        .map_err(handle_error)
 }
