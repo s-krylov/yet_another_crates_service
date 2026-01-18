@@ -1,3 +1,8 @@
+use argon2::{
+    Argon2, PasswordHasher,
+    password_hash::{SaltString, rand_core::OsRng},
+};
+
 use crate::{models::NewUsers, repository::UsersRepository};
 
 use super::create_db_connection;
@@ -5,9 +10,21 @@ use super::create_db_connection;
 pub async fn create_user(username: String, password: String, roles: Vec<String>) {
     let mut connection = create_db_connection().await;
 
-    let user =
-        UsersRepository::create_or_update(&mut connection, NewUsers { username, password }, roles)
-            .await;
+    let salt = SaltString::generate(OsRng);
+    let argon2 = Argon2::default();
+    let hashed_password = argon2
+        .hash_password(password.as_bytes(), &salt)
+        .expect("Failed to hash password");
+
+    let user = UsersRepository::create_or_update(
+        &mut connection,
+        NewUsers {
+            username,
+            password: hashed_password.to_string(),
+        },
+        roles,
+    )
+    .await;
     if let Ok(user) = user {
         println!("User successfully created: {:?}", user);
     } else {

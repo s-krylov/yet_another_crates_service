@@ -6,6 +6,7 @@ use rocket_db_pools::Database;
 
 pub mod crates;
 pub mod rustaceans;
+pub mod authentication;
 
 #[derive(Database)]
 #[database("postgres")]

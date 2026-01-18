@@ -9,6 +9,7 @@ async fn main() {
         .mount(
             "/",
             routes![
+                rest_routes::authentication::login,
                 rest_routes::rustaceans::get_rustaceans,
                 rest_routes::rustaceans::get_rustacean,
                 rest_routes::rustaceans::create_rustacean,

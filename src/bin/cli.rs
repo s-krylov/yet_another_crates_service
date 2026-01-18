@@ -1,4 +1,4 @@
-use clap::{Command, arg, command};
+use clap::{Command, arg, command, value_parser};
 use cr8t_service::commands::roles::{add_roles_for_user, delete_user_role, list_roles_for_user};
 use cr8t_service::commands::users::{create_user, delete_user, find_user, list_users};
 
@@ -31,7 +31,7 @@ async fn main() {
                     Command::new("delete")
                         .about("delete user")
                         .arg_required_else_help(true)
-                        .args([arg!(<id>).required(true)]),
+                        .args([arg!(<id>).value_parser(value_parser!(i32)).required(true)]),
                 ]),
             Command::new("roles")
                 .about("working with roles")
