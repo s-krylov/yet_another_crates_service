@@ -1,10 +1,7 @@
 use rocket::routes;
 use rocket_db_pools::Database;
 
-mod models;
-mod repository;
-mod rest_routes;
-mod schema;
+use cr8t_service::rest_routes;
 
 #[rocket::main]
 async fn main() {

@@ -11,10 +11,10 @@ use crate::repository::CratesRepository;
 
 #[rocket::get("/crates")]
 pub async fn get_crates(mut db: Connection<DbConnection>) -> Result<Value, Custom<Value>> {
-    CratesRepository::list(&mut db, 100)
+    CratesRepository::list(&mut db, 0, 100)
         .await
         .map(|crates| json!(crates))
-        .map_err(|_| Custom(Status::InternalServerError, json!("Error")))
+        .map_err(handle_error)
 }
 
 #[rocket::get("/crates/<id>")]

@@ -11,7 +11,7 @@ use crate::repository::RustaceansRepository;
 
 #[rocket::get("/rustaceans")]
 pub async fn get_rustaceans(mut db: Connection<DbConnection>) -> Result<Value, Custom<Value>> {
-    RustaceansRepository::list(&mut db, 100)
+    RustaceansRepository::list(&mut db, 0, 100)
         .await
         .map(|rustaceans| json!(rustaceans))
         .map_err(handle_error)
