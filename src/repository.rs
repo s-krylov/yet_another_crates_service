@@ -2,12 +2,16 @@ use crate::models::{
     Crates, NewCrates, NewRoles, NewRustaceans, NewUsers, NewUsersRoles, Roles, Rustaceans, Users,
     UsersRoles,
 };
+use crate::rest_routes::handle_redis_error;
 use crate::schema;
 use diesel::query_dsl::methods::{FilterDsl, FindDsl, LimitDsl, OffsetDsl};
 use diesel::{
     BelongingToDsl, ExpressionMethods, JoinOnDsl, QueryDsl, QueryResult, SelectableHelper,
 };
 use diesel_async::{AsyncPgConnection, RunQueryDsl};
+use rocket::response::status::Custom;
+use rocket::serde::json::Value;
+use rocket_db_pools::deadpool_redis::redis::AsyncCommands;
 
 pub struct RustaceansRepository;
 
@@ -458,5 +462,22 @@ impl UserRolesRepository {
             .filter(schema::users_roles::users_id.eq(user_id))
             .execute(con)
             .await
+    }
+}
+
+pub struct SessionRepository;
+
+impl SessionRepository {
+    const EXIPRATION_DURATION: usize = 2 * 3600;
+
+    pub async fn save_session(
+        con: &mut rocket_db_pools::deadpool_redis::Connection,
+        session_id: &str,
+        user: &Users,
+    ) -> Result<(), Custom<Value>> {
+        let path = format!("login/{session_id}");
+        con.set_ex::<String, i32, ()>(path, user.id, Self::EXIPRATION_DURATION)
+            .await
+            .map_err(|error| handle_redis_error(error))
     }
 }

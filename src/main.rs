@@ -23,6 +23,7 @@ async fn main() {
             ],
         )
         .attach(rest_routes::DbConnection::init())
+        .attach(rest_routes::CacheConnection::init())
         .launch()
         .await;
 }

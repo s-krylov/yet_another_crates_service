@@ -3,7 +3,11 @@ services:
     build: .
     environment:
       - DATABASE_URL=postgres://sa:pass@postgres/crate_db
-      - ROCKET_DATABASES={postgres={url=postgres://sa:pass@postgres/crate_db}}
+      - |
+        ROCKET_DATABASES={
+          postgres={url=postgres://sa:pass@postgres/crate_db},
+          redis={url=redis://redis:6379}
+        }
     ports:
       - 8000:8000
     volumes:
