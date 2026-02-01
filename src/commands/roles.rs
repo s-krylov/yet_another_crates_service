@@ -1,4 +1,4 @@
-use super::create_db_connection;
+use super::{convert_to_role_codes, create_db_connection};
 use crate::repository::{RolesRepository, UserRolesRepository, UsersRepository};
 
 pub async fn list_roles_for_user(name: String) {
@@ -16,6 +16,7 @@ pub async fn list_roles_for_user(name: String) {
 pub async fn add_roles_for_user(name: String, roles: Vec<String>) {
     let mut connection = create_db_connection().await;
 
+    let roles = convert_to_role_codes(&roles);
     let roles = UsersRepository::add_user_roles(&mut connection, name.clone(), roles).await;
     if let Ok(roles) = roles {
         println!("User {name} now have the following roles: {roles:?}");
@@ -27,7 +28,9 @@ pub async fn add_roles_for_user(name: String, roles: Vec<String>) {
 pub async fn delete_user_role(username: String, role: String) {
     let mut connection = create_db_connection().await;
 
-    let result = UserRolesRepository::delete_user_role(&mut connection, username.clone(), role.clone()).await;
+    let result =
+        UserRolesRepository::delete_user_role(&mut connection, username.clone(), role.clone())
+            .await;
     if let Ok(_) = result {
         println!("User {username} role {role} was successfully deleted");
     } else {

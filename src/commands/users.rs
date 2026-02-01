@@ -5,7 +5,7 @@ use argon2::{
 
 use crate::{models::NewUsers, repository::UsersRepository};
 
-use super::create_db_connection;
+use super::{convert_to_role_codes, create_db_connection};
 
 pub async fn create_user(username: String, password: String, roles: Vec<String>) {
     let mut connection = create_db_connection().await;
@@ -16,6 +16,7 @@ pub async fn create_user(username: String, password: String, roles: Vec<String>)
         .hash_password(password.as_bytes(), &salt)
         .expect("Failed to hash password");
 
+    let roles = convert_to_role_codes(&roles);
     let user = UsersRepository::create_or_update(
         &mut connection,
         NewUsers {

@@ -11,7 +11,10 @@ use rocket_db_pools::Database;
 use rocket_db_pools::deadpool_redis::redis::RedisError;
 use std::error::Error as StdError;
 
+use crate::models::EditorUser;
+use crate::models::RoleCodes;
 use crate::models::Users;
+use crate::repository::RolesRepository;
 use crate::repository::SessionRepository;
 use crate::repository::UsersRepository;
 
@@ -57,9 +60,6 @@ impl<'r> FromRequest<'r> for Users {
         let Some(session_id) = auth else {
             return Outcome::Error((Status::Unauthorized, ()));
         };
-        println!("session_id = {}", session_id);
-        println!("session_id.len = {}", session_id.len());
-
         let cache_outcome = request.guard::<Connection<CacheConnection>>().await;
         let Outcome::Success(mut cache) = cache_outcome else {
             return Outcome::Error((Status::Unauthorized, ()));
@@ -79,5 +79,36 @@ impl<'r> FromRequest<'r> for Users {
             Ok(user) => Outcome::Success(user),
             Err(_) => Outcome::Error((Status::Unauthorized, ())),
         };
+    }
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for EditorUser {
+    type Error = ();
+
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let user_outcome = request.guard::<Users>().await;
+        let Outcome::Success(user) = user_outcome else {
+            return Outcome::Error((Status::Unauthorized, ()));
+        };
+        rocket::info!("user = {user:?}");
+        let db_outcome = request.guard::<Connection<DbConnection>>().await;
+        let Outcome::Success(mut db) = db_outcome else {
+            return Outcome::Error((Status::Unauthorized, ()));
+        };
+
+        let roles = RolesRepository::list_user_roles(&mut db, user.username.clone()).await;
+        let Ok(roles) = roles else {
+            return Outcome::Error((Status::Unauthorized, ()));
+        };
+        rocket::info!("roles = {roles:?}");
+        if roles
+            .iter()
+            .any(|r| r.code == RoleCodes::Admin || r.code == RoleCodes::Editor)
+        {
+            Outcome::Success(EditorUser(user))
+        } else {
+            Outcome::Error((Status::Unauthorized, ()))
+        }
     }
 }

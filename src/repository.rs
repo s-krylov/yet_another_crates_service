@@ -1,6 +1,6 @@
 use crate::models::{
-    Crates, NewCrates, NewRoles, NewRustaceans, NewUsers, NewUsersRoles, Roles, Rustaceans, Users,
-    UsersRoles,
+    Crates, NewCrates, NewRoles, NewRustaceans, NewUsers, NewUsersRoles, RoleCodes, Roles,
+    Rustaceans, Users, UsersRoles,
 };
 use crate::rest_routes::handle_redis_error;
 use crate::schema;
@@ -118,7 +118,7 @@ impl UsersRepository {
     pub async fn create_or_update(
         con: &mut AsyncPgConnection,
         user: NewUsers,
-        roles: Vec<String>,
+        roles: Vec<RoleCodes>,
     ) -> QueryResult<Users> {
         let user = Self::create(con, user).await?;
         let already_existing_user_roles =
@@ -144,7 +144,7 @@ impl UsersRepository {
             .iter()
             .map(|role_code| NewRoles {
                 code: role_code.clone(),
-                name: format!("generic name for {}", role_code),
+                name: format!("generic name for {:?}", role_code),
             })
             .collect::<Vec<NewRoles>>();
 
@@ -170,7 +170,7 @@ impl UsersRepository {
     pub async fn add_user_roles(
         con: &mut AsyncPgConnection,
         name: String,
-        roles: Vec<String>,
+        roles: Vec<RoleCodes>,
     ) -> QueryResult<Vec<Roles>> {
         let user = Self::find_one_by_name(con, name).await?;
 
@@ -197,7 +197,7 @@ impl UsersRepository {
             .iter()
             .map(|role_code| NewRoles {
                 code: role_code.clone(),
-                name: format!("generic name for {}", role_code),
+                name: format!("generic name for {:?}", role_code),
             })
             .collect::<Vec<NewRoles>>();
 
@@ -367,7 +367,7 @@ impl RolesRepository {
     pub async fn find_user_roles_codes(
         con: &mut AsyncPgConnection,
         user: &Users,
-        roles: &[String],
+        roles: &[RoleCodes],
     ) -> QueryResult<Vec<Roles>> {
         FilterDsl::filter(
             UsersRoles::belonging_to(user).inner_join(schema::roles::table),
@@ -380,7 +380,7 @@ impl RolesRepository {
 
     pub async fn find_roles_codes(
         con: &mut AsyncPgConnection,
-        roles: &[String],
+        roles: &[RoleCodes],
     ) -> QueryResult<Vec<Roles>> {
         FilterDsl::filter(schema::roles::table, schema::roles::code.eq_any(roles))
             .get_results(con)
@@ -481,7 +481,11 @@ impl SessionRepository {
             .map_err(|error| handle_redis_error(error))
     }
 
-    pub async fn get_user_id(con: &mut rocket_db_pools::deadpool_redis::Connection, session_id: &str) -> Result<i32, RedisError> {
-        con.get::<'_, String,  i32>(format!("login/{session_id}")).await
+    pub async fn get_user_id(
+        con: &mut rocket_db_pools::deadpool_redis::Connection,
+        session_id: &str,
+    ) -> Result<i32, RedisError> {
+        con.get::<'_, String, i32>(format!("login/{session_id}"))
+            .await
     }
 }

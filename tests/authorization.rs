@@ -21,8 +21,6 @@ fn test_login() -> Rezult {
         .output()
         .unwrap();
 
-    println!("output = {output:?}");
-
     let response = Client::new()
         .post(format!("{APP_HOST}/login"))
         .json(&json!({

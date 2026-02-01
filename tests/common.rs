@@ -7,16 +7,16 @@ use std::process::Command;
 pub const APP_HOST: &'static str = "http://127.0.0.1:8000";
 pub type Rezult = Result<(), reqwest::Error>;
 
-pub fn create_admin_rest_client() -> Result<Client, Error> {
+pub fn create_user_rest_client(user: &str, role: &str) -> Result<Client, Error> {
     let output = Command::new("cargo")
         .arg("run")
         .arg("--bin")
         .arg("cli")
         .arg("users")
         .arg("create")
-        .arg("dummy_user")
+        .arg(user)
         .arg("123")
-        .arg("viewer")
+        .arg(role)
         .output()
         .unwrap();
 
@@ -25,7 +25,7 @@ pub fn create_admin_rest_client() -> Result<Client, Error> {
     let response = Client::new()
         .post(format!("{APP_HOST}/login"))
         .json(&json!({
-            "username": "dummy_user",
+            "username": user,
             "password": "123"
         }))
         .send()?;
@@ -35,8 +35,6 @@ pub fn create_admin_rest_client() -> Result<Client, Error> {
 
     assert!(json.get("session_id").is_some());
     let session_id = json["session_id"].as_str().unwrap();
-    println!("session_id test = {session_id:?}");
-    println!("session_id.len() test = {:?}", session_id.len());
     assert_eq!(session_id.len(), 128);
 
     let auth_header = format!("Bearer {}", session_id);
@@ -49,6 +47,14 @@ pub fn create_admin_rest_client() -> Result<Client, Error> {
         .default_headers(headers)
         .build()
         .unwrap())
+}
+
+pub fn create_viewer_rest_client() -> Result<Client, Error> {
+    create_user_rest_client("dummy_user", "viewer")
+}
+
+pub fn create_editor_rest_client() -> Result<Client, Error> {
+    create_user_rest_client("dummy_editor", "editor")
 }
 
 pub fn create_test_rustecean(client: &Client) -> Result<Value, Error> {
