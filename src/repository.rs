@@ -11,7 +11,7 @@ use diesel::{
 use diesel_async::{AsyncPgConnection, RunQueryDsl};
 use rocket::response::status::Custom;
 use rocket::serde::json::Value;
-use rocket_db_pools::deadpool_redis::redis::AsyncCommands;
+use rocket_db_pools::deadpool_redis::redis::{AsyncCommands, RedisError};
 
 pub struct RustaceansRepository;
 
@@ -479,5 +479,9 @@ impl SessionRepository {
         con.set_ex::<String, i32, ()>(path, user.id, Self::EXIPRATION_DURATION)
             .await
             .map_err(|error| handle_redis_error(error))
+    }
+
+    pub async fn get_user_id(con: &mut rocket_db_pools::deadpool_redis::Connection, session_id: &str) -> Result<i32, RedisError> {
+        con.get::<'_, String,  i32>(format!("login/{session_id}")).await
     }
 }

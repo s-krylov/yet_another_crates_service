@@ -4,7 +4,7 @@ use rocket_db_pools::Connection;
 
 use crate::auth::{Credentials, authenticate_user};
 use crate::repository::{SessionRepository, UsersRepository};
-use crate::rest_routes::{CacheConnection, DbConnection, handle_error, handle_password_error};
+use crate::rest_routes::{CacheConnection, DbConnection, reply_with_unauthorized};
 
 #[rocket::post("/login", format = "json", data = "<credentials>")]
 pub async fn login(
@@ -15,9 +15,9 @@ pub async fn login(
     let credentials = credentials.into_inner();
     let user = UsersRepository::find_one_by_name(&mut db, credentials.username.clone())
         .await
-        .map_err(handle_error)?;
-    let session_id =
-        authenticate_user(&user, credentials).map_err(|error| handle_password_error(error))?;
+        .map_err(reply_with_unauthorized::<diesel::result::Error>)?;
+    let session_id = authenticate_user(&user, credentials)
+        .map_err(reply_with_unauthorized::<argon2::password_hash::Error>)?;
     SessionRepository::save_session(&mut cache, &session_id, &user).await?;
     return Ok(json!({
         "session_id": session_id

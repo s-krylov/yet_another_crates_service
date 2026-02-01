@@ -1,31 +1,35 @@
 use pretty_assertions::assert_eq;
-use reqwest::{StatusCode, blocking::Client};
+use reqwest::StatusCode;
 use rocket::form::validate::Contains;
 use serde_json::{Value, json};
 
-use common::{APP_HOST, Rezult, create_test_rustecean, delete_test_rustecean};
+use common::{
+    APP_HOST, Rezult, create_admin_rest_client, create_test_rustecean, delete_test_rustecean,
+};
 
 mod common;
 
 #[test]
 fn test_list_rustaceans() -> Rezult {
-    let rustacean1 = create_test_rustecean()?;
-    let rustacean2 = create_test_rustecean()?;
-    let response = Client::new().get(format!("{APP_HOST}/rustaceans")).send()?;
+    let client = create_admin_rest_client()?;
+    let rustacean1 = create_test_rustecean(&client)?;
+    let rustacean2 = create_test_rustecean(&client)?;
+    let response = client.get(format!("{APP_HOST}/rustaceans")).send()?;
 
     assert_eq!(response.status(), StatusCode::OK);
     let response: Value = response.json()?;
     let respose = response.as_array();
     assert!(respose.contains(&rustacean1) && respose.contains(&rustacean2));
 
-    let _ = delete_test_rustecean(rustacean1["id"].as_i64().unwrap())?;
-    delete_test_rustecean(rustacean2["id"].as_i64().unwrap())
+    let _ = delete_test_rustecean(&client, rustacean1["id"].as_i64().unwrap())?;
+    delete_test_rustecean(&client, rustacean2["id"].as_i64().unwrap())
 }
 
 #[test]
 fn test_get_rustaceans() -> Rezult {
-    let rustacean = create_test_rustecean()?;
-    let response = Client::new()
+    let client = create_admin_rest_client()?;
+    let rustacean = create_test_rustecean(&client)?;
+    let response = client
         .get(format!("{APP_HOST}/rustaceans/{}", rustacean["id"]))
         .send()?;
 
@@ -42,12 +46,13 @@ fn test_get_rustaceans() -> Rezult {
         })
     );
 
-    delete_test_rustecean(response["id"].as_i64().unwrap())
+    delete_test_rustecean(&client, response["id"].as_i64().unwrap())
 }
 
 #[test]
 fn test_get_rustaceans_not_found() -> Rezult {
-    let response = Client::new()
+    let client = create_admin_rest_client()?;
+    let response = client
         .get(format!("{APP_HOST}/rustaceans/{}", 1000000))
         .send()?;
 
@@ -58,7 +63,8 @@ fn test_get_rustaceans_not_found() -> Rezult {
 
 #[test]
 fn test_create_rustaceans() -> Rezult {
-    let json_response: Value = create_test_rustecean()?;
+    let client = create_admin_rest_client()?;
+    let json_response: Value = create_test_rustecean(&client)?;
     assert_eq!(
         json_response,
         json!({
@@ -69,14 +75,15 @@ fn test_create_rustaceans() -> Rezult {
         })
     );
 
-    delete_test_rustecean(json_response["id"].as_i64().unwrap())
+    delete_test_rustecean(&client, json_response["id"].as_i64().unwrap())
 }
 
 #[test]
 fn test_update_rustaceans() -> Rezult {
-    let json_response: Value = create_test_rustecean()?;
+    let client = create_admin_rest_client()?;
+    let json_response: Value = create_test_rustecean(&client)?;
 
-    let update_response = Client::new()
+    let update_response = client
         .put(format!("{APP_HOST}/rustaceans/{}", json_response["id"]))
         .json(&json!({
             "name": "my amazing new name",
@@ -96,11 +103,12 @@ fn test_update_rustaceans() -> Rezult {
         })
     );
 
-    delete_test_rustecean(update_response["id"].as_i64().unwrap())
+    delete_test_rustecean(&client, update_response["id"].as_i64().unwrap())
 }
 
 #[test]
 fn test_delete_rustaceans() -> Rezult {
-    let json_response: Value = create_test_rustecean()?;
-    delete_test_rustecean(json_response["id"].as_i64().unwrap())
+    let client = create_admin_rest_client()?;
+    let json_response: Value = create_test_rustecean(&client)?;
+    delete_test_rustecean(&client, json_response["id"].as_i64().unwrap())
 }

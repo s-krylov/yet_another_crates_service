@@ -38,3 +38,31 @@ fn test_login() -> Rezult {
     assert_eq!(json["session_id"].as_str().len(), 128);
     Ok(())
 }
+
+#[test]
+fn test_login_failed() -> Rezult {
+    let output = Command::new("cargo")
+        .arg("run")
+        .arg("--bin")
+        .arg("cli")
+        .arg("users")
+        .arg("create")
+        .arg("dummy_user")
+        .arg("123")
+        .arg("viewer")
+        .output()
+        .unwrap();
+
+    println!("output = {output:?}");
+
+    let response = Client::new()
+        .post(format!("{APP_HOST}/login"))
+        .json(&json!({
+            "username": "defenetly_not_an_user",
+            "password": "wewewe"
+        }))
+        .send()?;
+
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    Ok(())
+}

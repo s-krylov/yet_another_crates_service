@@ -1,41 +1,43 @@
 use pretty_assertions::assert_eq;
-use reqwest::{StatusCode, blocking::Client};
+use reqwest::StatusCode;
 use rocket::form::validate::Contains;
 use serde_json::{Value, json};
 
 use common::{
-    APP_HOST, Rezult, create_test_crate, create_test_rustecean, delete_test_crate,
-    delete_test_rustecean,
+    APP_HOST, Rezult, create_admin_rest_client, create_test_crate, create_test_rustecean,
+    delete_test_crate, delete_test_rustecean,
 };
 
 mod common;
 
 #[test]
 fn test_list_crates() -> Rezult {
-    let rustacean1 = create_test_rustecean()?;
-    let rustacean2 = create_test_rustecean()?;
-    let a_crate1 = create_test_crate(rustacean1["id"].as_i64().unwrap())?;
-    let a_crate2 = create_test_crate(rustacean2["id"].as_i64().unwrap())?;
+    let client = create_admin_rest_client()?;
+    let rustacean1 = create_test_rustecean(&client)?;
+    let rustacean2 = create_test_rustecean(&client)?;
+    let a_crate1 = create_test_crate(&client, rustacean1["id"].as_i64().unwrap())?;
+    let a_crate2 = create_test_crate(&client, rustacean2["id"].as_i64().unwrap())?;
 
-    let response = Client::new().get(format!("{APP_HOST}/crates")).send()?;
+    let response = client.get(format!("{APP_HOST}/crates")).send()?;
 
     assert_eq!(response.status(), StatusCode::OK);
     let response: Value = response.json()?;
     let respose = response.as_array();
     assert!(respose.contains(&a_crate1) && respose.contains(&a_crate2));
 
-    let _ = delete_test_crate(a_crate1["id"].as_i64().unwrap())?;
-    let _ = delete_test_crate(a_crate2["id"].as_i64().unwrap())?;
-    let _ = delete_test_rustecean(rustacean1["id"].as_i64().unwrap())?;
-    delete_test_rustecean(rustacean2["id"].as_i64().unwrap())
+    let _ = delete_test_crate(&client, a_crate1["id"].as_i64().unwrap())?;
+    let _ = delete_test_crate(&client, a_crate2["id"].as_i64().unwrap())?;
+    let _ = delete_test_rustecean(&client, rustacean1["id"].as_i64().unwrap())?;
+    delete_test_rustecean(&client, rustacean2["id"].as_i64().unwrap())
 }
 
 #[test]
 fn test_get_crates() -> Rezult {
-    let rustacean = create_test_rustecean()?;
-    let a_crate = create_test_crate(rustacean["id"].as_i64().unwrap())?;
+    let client = create_admin_rest_client()?;
+    let rustacean = create_test_rustecean(&client)?;
+    let a_crate = create_test_crate(&client, rustacean["id"].as_i64().unwrap())?;
 
-    let response = Client::new()
+    let response = client
         .get(format!("{APP_HOST}/crates/{}", a_crate["id"]))
         .send()?;
 
@@ -54,13 +56,14 @@ fn test_get_crates() -> Rezult {
         })
     );
 
-    let _ = delete_test_crate(a_crate["id"].as_i64().unwrap())?;
-    delete_test_rustecean(rustacean["id"].as_i64().unwrap())
+    let _ = delete_test_crate(&client, a_crate["id"].as_i64().unwrap())?;
+    delete_test_rustecean(&client, rustacean["id"].as_i64().unwrap())
 }
 
 #[test]
 fn test_get_crates_not_found() -> Rezult {
-    let response = Client::new()
+    let client = create_admin_rest_client()?;
+    let response = client
         .get(format!("{APP_HOST}/crates/{}", 1000000))
         .send()?;
 
@@ -71,8 +74,9 @@ fn test_get_crates_not_found() -> Rezult {
 
 #[test]
 fn test_create_crates() -> Rezult {
-    let rustacean = create_test_rustecean()?;
-    let response = create_test_crate(rustacean["id"].as_i64().unwrap())?;
+    let client = create_admin_rest_client()?;
+    let rustacean = create_test_rustecean(&client)?;
+    let response = create_test_crate(&client, rustacean["id"].as_i64().unwrap())?;
 
     assert_eq!(
         response,
@@ -87,13 +91,14 @@ fn test_create_crates() -> Rezult {
         })
     );
 
-    let _ = delete_test_crate(response["id"].as_i64().unwrap())?;
-    delete_test_rustecean(rustacean["id"].as_i64().unwrap())
+    let _ = delete_test_crate(&client, response["id"].as_i64().unwrap())?;
+    delete_test_rustecean(&client, rustacean["id"].as_i64().unwrap())
 }
 
 #[test]
 fn test_create_crates_fails_for_not_existing_rustaceans() -> Rezult {
-    let response = Client::new()
+    let client = create_admin_rest_client()?;
+    let response = client
         .post(format!("{APP_HOST}/crates"))
         .json(&json!({
             "rustaceans_id": 10000000,
@@ -110,10 +115,11 @@ fn test_create_crates_fails_for_not_existing_rustaceans() -> Rezult {
 
 #[test]
 fn test_update_crates() -> Rezult {
-    let rustacean = create_test_rustecean()?;
-    let a_crate = create_test_crate(rustacean["id"].as_i64().unwrap())?;
+    let client = create_admin_rest_client()?;
+    let rustacean = create_test_rustecean(&client)?;
+    let a_crate = create_test_crate(&client, rustacean["id"].as_i64().unwrap())?;
 
-    let update_response = Client::new()
+    let update_response = client
         .put(format!("{APP_HOST}/crates/{}", a_crate["id"]))
         .json(&json!({
             "rustaceans_id": a_crate["rustaceans_id"],
@@ -139,15 +145,16 @@ fn test_update_crates() -> Rezult {
         })
     );
 
-    let _ = delete_test_crate(update_response["id"].as_i64().unwrap())?;
-    delete_test_rustecean(rustacean["id"].as_i64().unwrap())
+    let _ = delete_test_crate(&client, update_response["id"].as_i64().unwrap())?;
+    delete_test_rustecean(&client, rustacean["id"].as_i64().unwrap())
 }
 
 #[test]
 fn test_delete_crates() -> Rezult {
-    let rustacean = create_test_rustecean()?;
-    let a_crate = create_test_crate(rustacean["id"].as_i64().unwrap())?;
+    let client = create_admin_rest_client()?;
+    let rustacean = create_test_rustecean(&client)?;
+    let a_crate = create_test_crate(&client, rustacean["id"].as_i64().unwrap())?;
 
-    let _ = delete_test_crate(a_crate["id"].as_i64().unwrap())?;
-    delete_test_rustecean(rustacean["id"].as_i64().unwrap())
+    let _ = delete_test_crate(&client, a_crate["id"].as_i64().unwrap())?;
+    delete_test_rustecean(&client, rustacean["id"].as_i64().unwrap())
 }
