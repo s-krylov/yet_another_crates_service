@@ -4,6 +4,7 @@ use crate::models::{
 };
 use crate::rest_routes::handle_redis_error;
 use crate::schema;
+use diesel::dsl::{IntervalDsl, now};
 use diesel::query_dsl::methods::{FilterDsl, FindDsl, LimitDsl, OffsetDsl};
 use diesel::{
     BelongingToDsl, ExpressionMethods, JoinOnDsl, QueryDsl, QueryResult, SelectableHelper,
@@ -80,6 +81,18 @@ impl CratesRepository {
         LimitDsl::limit(OffsetDsl::offset(schema::crates::table, offset), limit)
             .get_results(con)
             .await
+    }
+
+    pub async fn list_since(
+        con: &mut AsyncPgConnection,
+        hours_since: i32,
+    ) -> QueryResult<Vec<Crates>> {
+        FilterDsl::filter(
+            schema::crates::table,
+            schema::crates::create_at.ge(now - hours_since.hours()),
+        )
+        .get_results(con)
+        .await
     }
 
     pub async fn create(con: &mut AsyncPgConnection, a_crate: NewCrates) -> QueryResult<Crates> {

@@ -9,6 +9,8 @@ async fn main() {
         .mount(
             "/",
             routes![
+                rest_routes::me::me,
+                rest_routes::options,
                 rest_routes::authentication::login,
                 rest_routes::rustaceans::get_rustaceans,
                 rest_routes::rustaceans::get_rustacean,
@@ -24,6 +26,7 @@ async fn main() {
         )
         .attach(rest_routes::DbConnection::init())
         .attach(rest_routes::CacheConnection::init())
+        .attach(rest_routes::Cors)
         .launch()
         .await;
 }

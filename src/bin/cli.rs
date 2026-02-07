@@ -1,4 +1,5 @@
 use clap::{Command, arg, command, value_parser};
+use cr8t_service::commands::mail::send_digest;
 use cr8t_service::commands::roles::{add_roles_for_user, delete_user_role, list_roles_for_user};
 use cr8t_service::commands::users::{create_user, delete_user, find_user, list_users};
 
@@ -55,6 +56,15 @@ async fn main() {
                         .about("delete user role")
                         .arg_required_else_help(true)
                         .args([arg!(<username>).required(true), arg!(<role>).required(true)]),
+                ]),
+            Command::new("digest-send")
+                .about("send latest crates digest mail")
+                .arg_required_else_help(true)
+                .args([
+                    arg!(<hours_since>)
+                        .value_parser(value_parser!(i32))
+                        .required(true),
+                    arg!(<email>).required(true),
                 ]),
         ])
         .get_matches();
@@ -127,6 +137,17 @@ async fn main() {
             }
             _ => unreachable!("Shold not happen"),
         },
+        Some(("digest-send", sub_matches)) => {
+            let hours_since = sub_matches
+                .get_one::<i32>("hours_since")
+                .expect("hours_since id should be presented")
+                .clone();
+            let email = sub_matches
+                .get_one::<String>("email")
+                .expect("email parameter expected to be set")
+                .clone();
+            send_digest(email, hours_since).await;
+        }
         _ => unreachable!("Shold not happen"),
     }
 }

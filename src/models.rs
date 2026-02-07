@@ -52,6 +52,7 @@ pub struct NewCrates {
 pub struct Users {
     pub id: i32,
     pub username: String,
+    #[serde(skip_serializing)]
     pub password: String,
     pub create_at: NaiveDateTime,
 }

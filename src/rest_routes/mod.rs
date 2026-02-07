@@ -1,5 +1,9 @@
 use diesel::result::Error::{self, NotFound};
 use rocket::Request;
+use rocket::Response;
+use rocket::fairing::Fairing;
+use rocket::fairing::Info;
+use rocket::fairing::Kind;
 use rocket::http::Status;
 
 use rocket::request::FromRequest;
@@ -10,6 +14,7 @@ use rocket_db_pools::Connection;
 use rocket_db_pools::Database;
 use rocket_db_pools::deadpool_redis::redis::RedisError;
 use std::error::Error as StdError;
+use std::path::PathBuf;
 
 use crate::models::EditorUser;
 use crate::models::RoleCodes;
@@ -20,6 +25,7 @@ use crate::repository::UsersRepository;
 
 pub mod authentication;
 pub mod crates;
+pub mod me;
 pub mod rustaceans;
 
 #[derive(Database)]
@@ -110,5 +116,27 @@ impl<'r> FromRequest<'r> for EditorUser {
         } else {
             Outcome::Error((Status::Unauthorized, ()))
         }
+    }
+}
+
+#[rocket::options("/<_route_path..>")]
+pub fn options(_route_path: Option<PathBuf>) {}
+
+pub struct Cors;
+
+#[rocket::async_trait]
+impl Fairing for Cors {
+    fn info(&self) -> Info {
+        Info {
+            name: "Cors fairing for additional headers",
+            kind: Kind::Response,
+        }
+    }
+
+    async fn on_response<'r>(&self, _req: &'r Request<'_>, res: &mut Response<'r>) {
+        res.set_raw_header("Access-Control-Allow-Origin", "*");
+        res.set_raw_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+        res.set_raw_header("Access-Control-Allow-Headers", "*");
+        res.set_raw_header("Access-Control-Allow-Credentials", "true");
     }
 }

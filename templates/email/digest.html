@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf8">
+    <meta http-equiv="x-ua-compatible" content="ie-edge">
+    <title>Responsive crates digest</title>
+</head>
+
+<body>
+    <header>
+        <h1>Daily digest</h1>
+    </header>
+    <section>
+        <strong>Below you can find most recent created crates</strong>
+    </section>
+    <section id="main">
+        <main>
+            {% for crate in crates%}
+            <article>
+                <h2>{{crate.name}} - <code>{{crate.code}} : {{crate.version}}</code></h2>
+                <p>{{crate.description}}</p>
+                <small>{{crate.create_at}}</small>
+            </article>
+            {% endfor %}
+        </main>
+
+    </section>
+    <footer>
+        <h5>Generated in {{year}}</h5>
+    </footer>
+</body>
+
+</html>
